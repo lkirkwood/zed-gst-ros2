@@ -21,7 +21,7 @@ COPY . /opt/workspace/src/zed-gst-ros2
 WORKDIR /opt/workspace
 RUN source /opt/ros/humble/install/setup.bash && colcon build
 
-ENV GST_PLUGIN_PATH /opt/workspace/install/gst_bridge/lib/gst_bridge
+ENV GST_PLUGIN_PATH=/opt/workspace/install/gst_bridge/lib/gst_bridge
 
 RUN chmod +x /opt/workspace/src/zed-gst-ros2/entrypoint.sh
 ENTRYPOINT ["/opt/workspace/src/zed-gst-ros2/entrypoint.sh"]
