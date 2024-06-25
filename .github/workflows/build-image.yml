@@ -23,4 +23,4 @@ jobs:
         with:
           platforms: linux/arm64
           push: true
-          tags: linusus/utsma:${{ github.ref_name }}
+          tags: linusus/utsma:zed-gst-ros2-${{ github.ref_name }}
