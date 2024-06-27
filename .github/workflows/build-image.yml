@@ -24,4 +24,4 @@ jobs:
           file: Dockerfile.arm64
           platforms: linux/arm64
           push: true
-          tags: linusus/utsma:zed-gst-ros2-${{ github.ref_name }}
+          tags: linusus/utsma:zed-gst-ros2-arm64-${{ github.ref_name }}
