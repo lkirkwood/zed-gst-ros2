@@ -24,7 +24,7 @@ jobs:
           file: Dockerfile.arm64
           platforms: linux/arm64
           push: true
-          tags: linusus/utsma:zed-gst-ros2-arm64-${{ github.ref_name }}
+          tags: linusus/utsma:zed-gst-ros2-${{ github.ref_name }}
 
   build-amd64:
     environment: docker-build
@@ -45,4 +45,4 @@ jobs:
           file: Dockerfile.amd64
           platforms: linux/amd64
           push: true
-          tags: linusus/utsma:zed-gst-ros2-amd64-${{ github.ref_name }}
+          tags: linusus/utsma:zed-gst-ros2-${{ github.ref_name }}
