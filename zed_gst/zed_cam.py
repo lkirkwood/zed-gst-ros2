@@ -1,15 +1,18 @@
 import gi
 
 gi.require_version("Gst", "1.0")
-from gi.repository import Gst
+import os
 import sys
+from gi.repository import Gst
 
 Gst.init(sys.argv)
 
 
 def main():
+    camera_fps = os.environ.get("ZED_CAM_FPS") or "60"
+    topic = os.environ.get("ZED_ROS_TOPIC") or "image/depth"
     pipeline = Gst.parse_launch(
-        "v4l2src device=/dev/video0 ! rosimagesink ros-topic=image"
+        f"zedsrc stream-type=3 camera-fps={camera_fps} ! rosimagesink ros-topic={topic}"
     )
     bus = pipeline.get_bus()
     pipeline.set_state(Gst.State.PLAYING)
