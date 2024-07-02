@@ -7,20 +7,13 @@ RUN dpkg -P opencv-dev opencv-libs
 RUN apt-get install -y libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev \
     gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
     gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 \
-    gstreamer1.0-qt5 gstreamer1.0-pulseaudio
-
-# Install python binding deps
-RUN apt-get install -y libgirepository1.0-dev gcc libcairo2-dev pkg-config python3-dev gir1.2-gtk-3.0 \
-    python3 python3-pip
-RUN pip install pycairo pygobject
+    gstreamer1.0-qt5 gstreamer1.0-pulseaudio libgirepository1.0-dev gcc libcairo2-dev pkg-config python3-dev \
+    gir1.2-gtk-3.0 python3 python3-pip && python3 -m pip install pycairo pygobject
 
 # Install CUDA
-RUN apt-get install -y wget linux-headers-$(uname -r)
-RUN apt-key del 7fa2af80
-RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
-RUN dpkg -i cuda-keyring_1.1-1_all.deb
-RUN apt-get update
-RUN apt-get install -y cuda-toolkit
+RUN apt-get install -y wget linux-headers-$(uname -r) && apt-key del 7fa2af80 && \
+    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb && \
+    dpkg -i cuda-keyring_1.1-1_all.deb && apt-get update && apt-get install -y cuda-toolkit
 ENV PATH=/usr/local/cuda/bin:/usr/local/cuda/lib64/stubs:$PATH
 
 # Install ZED2 SDK
@@ -39,13 +32,10 @@ RUN mkdir -p /opt/workspace/src
 RUN git clone https://github.com/BrettRD/ros-gst-bridge /opt/workspace/src/gst_bridge
 
 # Install Zed GStreamer plugin
-RUN git clone https://github.com/stereolabs/zed-gstreamer.git /opt/workspace/src/zed-gstreamer
-RUN touch /opt/workspace/src/zed-gstreamer/COLCON_IGNORE
-RUN mkdir /opt/workspace/src/zed-gstreamer/build
-WORKDIR /opt/workspace/src/zed-gstreamer/build
-RUN cmake -DCMAKE_LIBRARY_PATH= -DCMAKE_BUILD_TYPE=Release ..
-RUN make && make install
-RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1
+RUN git clone https://github.com/stereolabs/zed-gstreamer.git /opt/workspace/src/zed-gstreamer && \
+    touch /opt/workspace/src/zed-gstreamer/COLCON_IGNORE && mkdir /opt/workspace/src/zed-gstreamer/build && \
+    cd /opt/workspace/src/zed-gstreamer/build && cmake -DCMAKE_LIBRARY_PATH= -DCMAKE_BUILD_TYPE=Release .. && \
+    make && make install && ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1
 
 # Build and setup environment
 WORKDIR /opt/workspace
