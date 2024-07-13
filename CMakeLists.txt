@@ -1,15 +1,21 @@
 cmake_minimum_required(VERSION 3.8)
 project(zed-gst)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
+add_compile_options(-Wall -Wextra -Wpedantic)
+include_directories(include)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# find dependencies
 find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(utsma_lifecycle_manager_msgs REQUIRED)
+find_package(utsma_common REQUIRED)
+
+find_package(PkgConfig)
+pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
+add_definitions(${GSTREAMER_CFLAGS})
+
+add_executable(stream src/main.cpp)
+ament_target_dependencies(stream rclcpp std_msgs lifecycle_msgs rclcpp_lifecycle utsma_lifecycle_manager_msgs)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
