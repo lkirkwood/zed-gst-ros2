@@ -1,9 +1,11 @@
 #ifndef ZED_STREAMER_H_
 #define ZED_STREAMER_H_
 
-#include "logging/ros_logger.hpp"
 #include "utsma_common/lifecycle_node.hpp"
-#include <memory>
+#include <rclcpp/logger.hpp>
+#include <rclcpp/timer.hpp>
+#include <rclcpp_lifecycle/lifecycle_publisher.hpp>
+#include <std_msgs/msg/detail/string__struct.hpp>
 
 class ZedStreamer : public utsma_common::LifecycleNode {
 public:
@@ -24,9 +26,10 @@ public:
   utsma_common::CallbackReturn
   on_shutdown(const rclcpp_lifecycle::State &state);
 
+  void callback();
+
 private:
-  bool active;
-  std::shared_ptr<ROSLogger> logger;
+  rclcpp::TimerBase::SharedPtr timer;
 
   void process();
   void create_publishers();
