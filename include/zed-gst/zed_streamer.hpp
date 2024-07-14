@@ -2,10 +2,7 @@
 #define ZED_STREAMER_H_
 
 #include "utsma_common/lifecycle_node.hpp"
-#include <rclcpp/logger.hpp>
 #include <rclcpp/timer.hpp>
-#include <rclcpp_lifecycle/lifecycle_publisher.hpp>
-#include <std_msgs/msg/detail/string__struct.hpp>
 
 class ZedStreamer : public utsma_common::LifecycleNode {
 public:
