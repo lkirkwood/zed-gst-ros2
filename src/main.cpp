@@ -1,9 +1,8 @@
 #include "zed-gst/zed_streamer.hpp"
-#include <memory>
 
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<ZedStreamer>());
+  rclcpp::spin((new ZedStreamer())->get_node_base_interface());
   rclcpp::shutdown();
   return 0;
 }
