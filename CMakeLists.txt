@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.8)
 project(zed-gst)
 
 add_compile_options(-Wall -Wextra -Wpedantic)
-include_directories(include)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(ament_cmake REQUIRED)
@@ -10,12 +9,16 @@ find_package(rclcpp REQUIRED)
 find_package(utsma_lifecycle_manager_msgs REQUIRED)
 find_package(utsma_common REQUIRED)
 
-find_package(PkgConfig)
-pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
-add_definitions(${GSTREAMER_CFLAGS})
+find_package(PkgConfig REQUIRED)
+pkg_search_module(gstreamer REQUIRED IMPORTED_TARGET gstreamer-1.0)
 
-add_executable(stream src/main.cpp src/zed_streamer.cpp src/logging/ros_logger.cpp)
-ament_target_dependencies(stream rclcpp std_msgs lifecycle_msgs rclcpp_lifecycle utsma_lifecycle_manager_msgs utsma_common)
+add_executable(streamer src/main.cpp src/zed_streamer.cpp src/logging/ros_logger.cpp)
+
+target_include_directories(streamer PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
+target_link_libraries(streamer PkgConfig::gstreamer)
+
+ament_target_dependencies(streamer rclcpp std_msgs lifecycle_msgs rclcpp_lifecycle utsma_lifecycle_manager_msgs utsma_common)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -29,4 +32,5 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+install(TARGETS streamer DESTINATION lib/${PROJECT_NAME})
 ament_package()
