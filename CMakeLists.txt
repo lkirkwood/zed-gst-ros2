@@ -12,7 +12,7 @@ find_package(utsma_common REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(gstreamer REQUIRED IMPORTED_TARGET gstreamer-1.0)
 
-add_executable(streamer src/main.cpp src/zed_streamer.cpp src/logging/ros_logger.cpp)
+add_executable(streamer src/main.cpp src/zed_streamer.cpp)
 
 target_include_directories(streamer PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
 target_link_libraries(streamer PkgConfig::gstreamer)
