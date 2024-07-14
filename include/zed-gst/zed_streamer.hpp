@@ -3,12 +3,11 @@
 
 #include "logging/ros_logger.hpp"
 #include "utsma_common/lifecycle_node.hpp"
+#include <memory>
 
 class ZedStreamer : public utsma_common::LifecycleNode {
 public:
-  const std::string node_name = "zed-cam";
-
-  ZedStreamer() : LifecycleNode(node_name){};
+  ZedStreamer();
   ~ZedStreamer();
 
   utsma_common::CallbackReturn
@@ -26,11 +25,8 @@ public:
   on_shutdown(const rclcpp_lifecycle::State &state);
 
 private:
-  bool exit_requested_{false};
-  bool is_active_{false};
-
-  std::shared_ptr<ROSLogger> logger_;
-  rclcpp::TimerBase::SharedPtr process_timer_;
+  bool active;
+  std::shared_ptr<ROSLogger> logger;
 
   void process();
   void create_publishers();
