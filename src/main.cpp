@@ -1,4 +1,3 @@
-#include "rclcpp/rclcpp.hpp"
 #include "zed-gst/zed_streamer.hpp"
 #include <rclcpp/utilities.hpp>
 
