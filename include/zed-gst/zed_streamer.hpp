@@ -2,6 +2,7 @@
 #define ZED_STREAMER_H_
 
 #include "utsma_common/lifecycle_node.hpp"
+#include <gst/gstbus.h>
 #include <rclcpp/timer.hpp>
 
 class ZedStreamer : public utsma_common::LifecycleNode {
@@ -23,13 +24,9 @@ public:
   utsma_common::CallbackReturn
   on_shutdown(const rclcpp_lifecycle::State &state);
 
-  void callback();
+  void stream();
 
-private:
-  rclcpp::TimerBase::SharedPtr timer;
-
-  void process();
-  void create_publishers();
+  GMainLoop *loop;
 };
 
 #endif // ZED_STREAMER_H_
