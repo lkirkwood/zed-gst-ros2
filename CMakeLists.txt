@@ -14,8 +14,8 @@ find_package(PkgConfig)
 pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
 add_definitions(${GSTREAMER_CFLAGS})
 
-add_executable(stream src/main.cpp)
-ament_target_dependencies(stream rclcpp std_msgs lifecycle_msgs rclcpp_lifecycle utsma_lifecycle_manager_msgs)
+add_executable(stream src/main.cpp src/zed_streamer.cpp src/logging/ros_logger.cpp)
+ament_target_dependencies(stream rclcpp std_msgs lifecycle_msgs rclcpp_lifecycle utsma_lifecycle_manager_msgs utsma_common)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
