@@ -15,7 +15,6 @@
 
 ZedStreamer::ZedStreamer()
     : utsma_common::LifecycleNode("zed_cam", "", 1000.0, false) {
-  RCLCPP_DEBUG(this->get_logger(), "Streamer initialised.");
   pipeline = nullptr;
   bus_watch_id = 0;
   active = false;
