@@ -3,7 +3,6 @@
 
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
-  // ZedStreamer().stream();
   rclcpp::spin((new ZedStreamer)->get_node_base_interface());
   rclcpp::shutdown();
   return 0;
