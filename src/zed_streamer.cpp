@@ -24,10 +24,9 @@ ZedStreamer::ZedStreamer()
     initialised = false;
   } else {
     initialised = true;
+    timer =
+        this->create_wall_timer(1s, std::bind(&ZedStreamer::poll_stream, this));
   }
-
-  timer =
-      this->create_wall_timer(1s, std::bind(&ZedStreamer::poll_stream, this));
 }
 
 ZedStreamer::~ZedStreamer() {}
