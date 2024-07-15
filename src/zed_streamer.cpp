@@ -1,5 +1,4 @@
 #include "zed-gst/zed_streamer.hpp"
-#include "gst/gst.h"
 #include "rclcpp_lifecycle/state.hpp"
 #include "utsma_common/lifecycle_node.hpp"
 #include <gst/gstbin.h>
@@ -11,7 +10,6 @@
 #include <gst/gstparse.h>
 #include <gst/gstpipeline.h>
 #include <gst/gstutils.h>
-#include <initializer_list>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
 
