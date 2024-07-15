@@ -3,6 +3,7 @@
 
 #include "utsma_common/lifecycle_node.hpp"
 #include <gst/gstbus.h>
+#include <gst/gstelement.h>
 #include <rclcpp/timer.hpp>
 
 class ZedStreamer : public utsma_common::LifecycleNode {
@@ -24,9 +25,18 @@ public:
   utsma_common::CallbackReturn
   on_shutdown(const rclcpp_lifecycle::State &state);
 
-  void stream();
+  void poll_stream();
+  int start_stream();
+  void stop_stream();
 
-  GMainLoop *loop;
+private:
+  rclcpp::TimerBase::SharedPtr timer;
+  GstElement *pipeline;
+  guint bus_watch_id;
+  bool initialised;
+  bool active;
+
+  int init_gst();
 };
 
 #endif // ZED_STREAMER_H_
