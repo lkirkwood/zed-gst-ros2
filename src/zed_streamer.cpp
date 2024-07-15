@@ -108,11 +108,15 @@ static int gst_bus_call(GstBus *, GstMessage *message, gpointer data) {
 
 void ZedStreamer::poll_stream() {
   if (!this->initialised) {
-    this->
-  } else if (this->start_stream()) {
-    RCLCPP_FATAL(this->get_logger(),
-                 "Failed to start stream. Shutting down...");
-    this->shutdown();
+    return;
+  }
+
+  if (!this->active) {
+    if (this->start_stream()) {
+      RCLCPP_FATAL(this->get_logger(),
+                   "Failed to start stream. Shutting down...");
+      this->shutdown();
+    }
   }
 }
 
