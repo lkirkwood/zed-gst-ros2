@@ -15,19 +15,33 @@
 #include <rclcpp/logging.hpp>
 
 ZedStreamer::ZedStreamer()
-    : utsma_common::LifecycleNode("zed_cam", "", 1000.0, false) {
-  pipeline = nullptr;
-  bus_watch_id = 0;
+    : utsma_common::LifecycleNode("zed_cam", "", 1000.0, false),
+      left_cam{nullptr}, right_cam{nullptr}, depth_cam{nullptr} {
   active = false;
 
   if (this->init_gst()) {
     RCLCPP_FATAL(this->get_logger(), "Failed to initialised gstreamer.");
     initialised = false;
-  } else {
-    initialised = true;
-    timer =
-        this->create_wall_timer(1s, std::bind(&ZedStreamer::poll_stream, this));
+    return;
   }
+
+  left_cam = this->create_pipeline("left_cam", "image/left_cam", {});
+
+  right_cam = this->create_pipeline("right_cam", "image/right_cam", {});
+
+  depth_cam = this->create_pipeline("depth_cam", "image/depth_cam", {});
+
+  for (auto pipe : pipelines) {
+    if (pipe == nullptr) {
+      RCLCPP_FATAL(this->get_logger(), "Failed to create gstreamer pipeline.");
+      initialised = false;
+      return;
+    };
+  }
+
+  initialised = true;
+  timer =
+      this->create_wall_timer(1s, std::bind(&ZedStreamer::poll_stream, this));
 }
 
 ZedStreamer::~ZedStreamer() {}
@@ -64,6 +78,10 @@ ZedStreamer::on_deactivate(const rclcpp_lifecycle::State &) {
 
 utsma_common::CallbackReturn
 ZedStreamer::on_cleanup(const rclcpp_lifecycle::State &) {
+  for (Pipeline **pipe : this->pipelines) {
+    gst_object_unref((*pipe)->pipeline);
+    g_source_remove((*pipe)->bus_watch_id);
+  }
   return utsma_common::CallbackReturn::SUCCESS;
 };
 
@@ -115,6 +133,39 @@ static int gst_bus_call(GstBus *, GstMessage *message, gpointer data) {
   return 0;
 };
 
+ZedStreamer::Pipeline *
+ZedStreamer::create_pipeline(const char *name, const char *ros_topic,
+                             std::map<const char *, const char *> src_opts) {
+  GstElement *source = gst_element_factory_make("videotestsrc", "source");
+  for (auto [key, val] : src_opts) {
+    g_object_set(G_OBJECT(source), key, val, NULL);
+  }
+
+  GstElement *sink = gst_element_factory_make("rosimagesink", "sink");
+  g_object_set(G_OBJECT(sink), "ros-topic", ros_topic, NULL);
+
+  GstElement *gst_pipe = gst_pipeline_new(name);
+  gst_bin_add_many(GST_BIN(gst_pipe), source, sink, NULL);
+
+  if (!gst_element_link_many(source, sink, NULL)) {
+    RCLCPP_FATAL(this->get_logger(),
+                 "Failed to link gstreamer pipeline elements.");
+    return nullptr;
+  }
+
+  GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(gst_pipe));
+  guint bus_watch_id = gst_bus_add_watch(bus, &gst_bus_call, this);
+
+  Pipeline *pipeline =
+      new Pipeline{gst_pipe, bus_watch_id, name, ros_topic, src_opts};
+
+  RCLCPP_INFO(this->get_logger(), "Pipeline: %s", pipeline->name);
+  if (pipeline == nullptr) {
+    RCLCPP_INFO(this->get_logger(), "Pipeline: %s", pipeline->name);
+  }
+  return pipeline;
+}
+
 void ZedStreamer::poll_stream() {
   if (!this->active) {
     if (this->start_stream()) {
@@ -128,35 +179,19 @@ void ZedStreamer::poll_stream() {
 int ZedStreamer::start_stream() {
   RCLCPP_INFO(this->get_logger(), "Starting gstreamer pipeline...");
 
-  pipeline = gst_pipeline_new("depth");
-  if (!pipeline) {
-    RCLCPP_FATAL(this->get_logger(), "Failed to launch gstreamer pipeline");
-    return 1;
+  for (Pipeline **pipe : this->pipelines) {
+    gst_element_set_state((*pipe)->pipeline, GST_STATE_PLAYING);
   }
 
-  auto source = gst_element_factory_make("videotestsrc", "source");
-  auto sink = gst_element_factory_make("rosimagesink", "sink");
-  g_object_set(sink, "ros-topic", "image", NULL);
-  gst_bin_add_many(GST_BIN(pipeline), source, sink, NULL);
-
-  if (!gst_element_link_many(source, sink, NULL)) {
-    RCLCPP_FATAL(this->get_logger(),
-                 "Failed to link gstreamer pipeline elements.");
-    return 1;
-  }
-
-  GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline));
-  bus_watch_id = gst_bus_add_watch(bus, &gst_bus_call, this);
-
-  gst_element_set_state(pipeline, GST_STATE_PLAYING);
   active = true;
 
-  RCLCPP_INFO(this->get_logger(), "Starting main pipeline loop.");
   return 0;
 }
 
 void ZedStreamer::stop_stream() {
-  gst_element_set_state(pipeline, GST_STATE_NULL);
-  gst_object_unref(pipeline);
-  g_source_remove(bus_watch_id);
+  for (Pipeline **pipe : this->pipelines) {
+    if ((*pipe) != nullptr) {
+      gst_element_set_state((*pipe)->pipeline, GST_STATE_NULL);
+    }
+  }
 }

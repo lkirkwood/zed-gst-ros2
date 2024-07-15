@@ -31,12 +31,26 @@ public:
 
 private:
   rclcpp::TimerBase::SharedPtr timer;
-  GstElement *pipeline;
-  guint bus_watch_id;
-  bool initialised;
   bool active;
-
+  bool initialised;
   int init_gst();
+
+  struct Pipeline {
+    GstElement *pipeline;
+    guint bus_watch_id;
+
+    const char *name;
+    const char *ros_topic;
+    std::map<const char *, const char *> src_opts;
+  };
+
+  Pipeline *create_pipeline(const char *name, const char *ros_topic,
+                            std::map<const char *, const char *> src_opts);
+
+  Pipeline *left_cam;
+  Pipeline *right_cam;
+  Pipeline *depth_cam;
+  Pipeline **pipelines[3] = {&left_cam, &right_cam, &depth_cam};
 };
 
 #endif // ZED_STREAMER_H_
