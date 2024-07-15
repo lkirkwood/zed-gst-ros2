@@ -1,6 +1,7 @@
 #include "zed-gst/zed_streamer.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 #include "utsma_common/lifecycle_node.hpp"
+#include <gst/gst.h>
 #include <gst/gstbin.h>
 #include <gst/gstbus.h>
 #include <gst/gstelement.h>
@@ -71,6 +72,17 @@ ZedStreamer::on_shutdown(const rclcpp_lifecycle::State &) {
   this->shutdown();
   return utsma_common::CallbackReturn::SUCCESS;
 };
+
+int ZedStreamer::init_gst() {
+  GError *error = new GError;
+  if (!gst_init_check(NULL, NULL, &error)) {
+    std::string message = "Failed to initialise gstreamer: ";
+    message += error->message;
+    RCLCPP_FATAL(this->get_logger(), "%s", message.c_str());
+    return 1;
+  }
+  return 0;
+}
 
 static int gst_bus_call(GstBus *, GstMessage *message, gpointer data) {
   ZedStreamer *streamer = (ZedStreamer *)data;
