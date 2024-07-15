@@ -11,28 +11,57 @@
 #include <gst/gstparse.h>
 #include <gst/gstpipeline.h>
 #include <gst/gstutils.h>
+#include <initializer_list>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
 
 ZedStreamer::ZedStreamer()
     : utsma_common::LifecycleNode("zed_cam", "", 1000.0, false) {
   RCLCPP_DEBUG(this->get_logger(), "Streamer initialised.");
+  pipeline = nullptr;
+  bus_watch_id = 0;
+  active = false;
+
+  if (this->init_gst()) {
+    RCLCPP_FATAL(this->get_logger(), "Failed to initialised gstreamer.");
+    initialised = false;
+  } else {
+    initialised = true;
+  }
+
+  timer =
+      this->create_wall_timer(1s, std::bind(&ZedStreamer::poll_stream, this));
 }
 
 ZedStreamer::~ZedStreamer() {}
 
 utsma_common::CallbackReturn
 ZedStreamer::on_configure(const rclcpp_lifecycle::State &) {
-  return utsma_common::CallbackReturn::SUCCESS;
+  if (this->initialised) {
+    return utsma_common::CallbackReturn::SUCCESS;
+  } else {
+    return utsma_common::CallbackReturn::ERROR;
+  }
 };
 
 utsma_common::CallbackReturn
 ZedStreamer::on_activate(const rclcpp_lifecycle::State &) {
-  return utsma_common::CallbackReturn::SUCCESS;
+  if (this->initialised) {
+    if (this->start_stream()) {
+      return utsma_common::CallbackReturn::ERROR;
+    } else {
+      return utsma_common::CallbackReturn::SUCCESS;
+    }
+  } else {
+    return utsma_common::CallbackReturn::FAILURE;
+  }
 };
 
 utsma_common::CallbackReturn
 ZedStreamer::on_deactivate(const rclcpp_lifecycle::State &) {
+  if (this->initialised) {
+    this->stop_stream();
+  }
   return utsma_common::CallbackReturn::SUCCESS;
 };
 
@@ -43,6 +72,7 @@ ZedStreamer::on_cleanup(const rclcpp_lifecycle::State &) {
 
 utsma_common::CallbackReturn
 ZedStreamer::on_shutdown(const rclcpp_lifecycle::State &) {
+  this->shutdown();
   return utsma_common::CallbackReturn::SUCCESS;
 };
 
@@ -52,7 +82,7 @@ static int gst_bus_call(GstBus *, GstMessage *message, gpointer data) {
 
   case GST_MESSAGE_EOS:
     RCLCPP_INFO(streamer->get_logger(), "End of stream reached.");
-    g_main_loop_quit(streamer->loop);
+    streamer->stop_stream();
     break;
 
   case GST_MESSAGE_ERROR: {
@@ -66,7 +96,7 @@ static int gst_bus_call(GstBus *, GstMessage *message, gpointer data) {
                  error->message);
     g_error_free(error);
 
-    g_main_loop_quit(streamer->loop);
+    streamer->stop_stream();
     break;
   }
   default:
@@ -76,23 +106,23 @@ static int gst_bus_call(GstBus *, GstMessage *message, gpointer data) {
   return 0;
 };
 
-void ZedStreamer::stream() {
+void ZedStreamer::poll_stream() {
+  if (!this->initialised) {
+    this->
+  } else if (this->start_stream()) {
+    RCLCPP_FATAL(this->get_logger(),
+                 "Failed to start stream. Shutting down...");
+    this->shutdown();
+  }
+}
+
+int ZedStreamer::start_stream() {
   RCLCPP_INFO(this->get_logger(), "Starting gstreamer pipeline...");
 
-  GError *error = new GError;
-  if (!gst_init_check(NULL, NULL, &error)) {
-    std::string message = "Failed to initialise gstreamer: ";
-    message += error->message;
-    RCLCPP_FATAL(this->get_logger(), "%s", message.c_str());
-    return;
-  }
-
-  auto pipeline = gst_pipeline_new("depth");
+  pipeline = gst_pipeline_new("depth");
   if (!pipeline) {
-    std::string message = "Failed to launch gstreamer pipeline: ";
-    message += error->message;
-    RCLCPP_FATAL(this->get_logger(), "%s", message.c_str());
-    return;
+    RCLCPP_FATAL(this->get_logger(), "Failed to launch gstreamer pipeline");
+    return 1;
   }
 
   auto source = gst_element_factory_make("videotestsrc", "source");
@@ -102,19 +132,21 @@ void ZedStreamer::stream() {
   if (!gst_element_link_many(source, sink, NULL)) {
     RCLCPP_FATAL(this->get_logger(),
                  "Failed to link gstreamer pipeline elements.");
-    return;
+    return 1;
   }
 
-  loop = g_main_loop_new(NULL, FALSE);
   GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline));
+  bus_watch_id = gst_bus_add_watch(bus, &gst_bus_call, this);
 
-  auto bus_watch_id = gst_bus_add_watch(bus, &gst_bus_call, this);
   gst_element_set_state(pipeline, GST_STATE_PLAYING);
-  RCLCPP_INFO(this->get_logger(), "Starting main pipeline loop.");
-  g_main_loop_run(loop);
+  active = true;
 
+  RCLCPP_INFO(this->get_logger(), "Starting main pipeline loop.");
+  return 0;
+}
+
+void ZedStreamer::stop_stream() {
   gst_element_set_state(pipeline, GST_STATE_NULL);
   gst_object_unref(pipeline);
   g_source_remove(bus_watch_id);
-  g_main_loop_unref(loop);
 }
