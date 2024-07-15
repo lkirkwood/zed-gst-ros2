@@ -107,6 +107,7 @@ static int gst_bus_call(GstBus *, GstMessage *message, gpointer data) {
     streamer->stop_stream();
     break;
   }
+
   default:
     break;
   }
@@ -134,7 +135,8 @@ int ZedStreamer::start_stream() {
   }
 
   auto source = gst_element_factory_make("videotestsrc", "source");
-  auto sink = gst_element_factory_make("autovideosink", "sink");
+  auto sink = gst_element_factory_make("rosimagesink", "sink");
+  g_object_set(sink, "ros-topic", "image", NULL);
   gst_bin_add_many(GST_BIN(pipeline), source, sink, NULL);
 
   if (!gst_element_link_many(source, sink, NULL)) {
